@@ -1,0 +1,38 @@
+name: Bytebase SDL deploy
+
+on:
+  push:
+    branches: [main]
+    paths: ["schema/**/*.sql"]
+
+permissions: {}
+
+concurrency:
+  group: bytebase-deploy-neondb
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    permissions:
+      contents: read
+      id-token: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: test
+    container:
+      image: bytebase/bytebase-action:cloud
+    env:
+      BYTEBASE_URL: https://cloud.bytebase.com
+      BYTEBASE_WORKLOAD_IDENTITY: boojack-ci@bb-gitops-nuxa.workload.bytebase.com
+    steps:
+      - uses: actions/checkout@v7
+      - name: Deploy desired schema to Neon
+        run: |
+          bytebase-action rollout \
+            --url="$BYTEBASE_URL" \
+            --project=projects/bb-gitops-nuxa \
+            --targets=instances/new-instance-q2h6/databases/neondb \
+            --file-pattern="schema/**/*.sql" \
+            --declarative \
+            --target-stage=environments/test \
+            --output="$RUNNER_TEMP/bytebase-rollout.json"
