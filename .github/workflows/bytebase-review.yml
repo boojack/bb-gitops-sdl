@@ -1,0 +1,40 @@
+name: Bytebase SDL review
+
+on:
+  pull_request:
+    branches: [main]
+    paths: ["schema/**/*.sql"]
+
+permissions: {}
+
+concurrency:
+  group: bytebase-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  sql-review:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container:
+      image: bytebase/bytebase-action:cloud
+    env:
+      BYTEBASE_URL: https://cloud.bytebase.com
+      BYTEBASE_WORKLOAD_IDENTITY: boojack-ci@bb-gitops-nuxa.workload.bytebase.com
+    steps:
+      - uses: actions/checkout@v7
+      - name: Review desired schema
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          bytebase-action check \
+            --url="$BYTEBASE_URL" \
+            --project=projects/bb-gitops-nuxa \
+            --targets=instances/new-instance-q2h6/databases/neondb \
+            --file-pattern="schema/**/*.sql" \
+            --declarative \
+            --check-release=FAIL_ON_ERROR
