@@ -4,6 +4,7 @@ CREATE TABLE public.employee (
     full_name text NOT NULL,
     work_email text NOT NULL,
     hire_date date NOT NULL,
+    job_title text,
     employment_status text NOT NULL DEFAULT 'active',
     created_at timestamp with time zone NOT NULL DEFAULT now(),
     CONSTRAINT employee_pkey PRIMARY KEY (id),
